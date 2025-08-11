@@ -8,6 +8,13 @@ export async function registerDevicePushToken(userId: string | undefined | null)
   try {
     if (!userId) return null
 
+    // Expo Go on Android SDK 53+ doesn't support remote push notifications.
+    // Avoid calling getExpoPushTokenAsync to prevent the red screen error.
+    if (Platform.OS === 'android' && (Constants as any)?.appOwnership === 'expo') {
+      console.warn('Skipping remote push token registration on Android in Expo Go. Use a dev build to test push.')
+      return null
+    }
+
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
         name: 'default',
