@@ -32,15 +32,13 @@ export default function HistoryScreen() {
         
         if (error) {
           console.warn('Error loading roasts:', error)
-          // If table doesn't exist, show mock data
-          setRoasts(getMockRoasts())
+          setRoasts([])
         } else {
           setRoasts((data as RoastRow[]) ?? [])
         }
       } catch (err) {
         console.warn('Failed to load roasts:', err)
-        // Fallback to mock data if there's an error
-        if (isMounted) setRoasts(getMockRoasts())
+        if (isMounted) setRoasts([])
       }
       
       if (isMounted) setLoading(false)
@@ -50,16 +48,7 @@ export default function HistoryScreen() {
     return () => { isMounted = false }
   }, [userId])
 
-  function getMockRoasts(): RoastRow[] {
-    return Array.from({ length: 8 }, (_, i) => ({
-      id: `mock-${i}`,
-      user_id: userId || 'mock-user',
-      roast_text: 'Still procrastinating? Your excuses are getting old.',
-      intensity: 'medium' as const,
-      delivered_at: new Date(Date.now() - (i + 1) * 60 * 60 * 1000).toISOString(),
-      goal_context: 'Your incomplete goal'
-    }))
-  }
+  // removed mock roasts
 
   function getTimeAgo(delivered: string): string {
     const now = Date.now()

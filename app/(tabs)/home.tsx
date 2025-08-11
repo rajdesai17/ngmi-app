@@ -34,7 +34,7 @@ export default function HomeScreen() {
         const { data: goals } = await supabase
           .from('goals')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', user!.id)
 
         if (goals) {
           const totalGoals = goals.length
@@ -55,7 +55,7 @@ export default function HomeScreen() {
         const { data: roasts } = await supabase
           .from('roast_history')
           .select('delivered_at')
-          .eq('user_id', user.id)
+          .eq('user_id', user!.id)
           .order('delivered_at', { ascending: false })
 
         if (roasts) {
@@ -107,7 +107,7 @@ export default function HomeScreen() {
           <View style={styles.headerRow}>
             <Image source={{ uri: 'https://i.pravatar.cc/64' }} style={styles.avatar} />
             <View style={{ marginLeft: 12 }}>
-              <Text style={styles.greet}>Hi{user ? ',' : ''} {user?.email ?? 'Guest'}</Text>
+              <Text style={styles.greet}>{(user?.user_metadata as any)?.name ?? user?.email ?? 'Account'}</Text>
               <Text style={styles.subtle}>Curated & trending</Text>
             </View>
           </View>

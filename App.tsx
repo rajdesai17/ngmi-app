@@ -8,12 +8,13 @@ import HomeScreen from './app/(tabs)/home'
 import GoalsScreen from './app/(tabs)/goals'
 import HistoryScreen from './app/(tabs)/history'
 import SettingsScreen from './app/(tabs)/settings'
-import { AuthProvider } from './src/features/auth/AuthContext'
+import { AuthProvider, useAuth } from './src/features/auth/AuthContext'
 import { setupNotificationListeners } from './src/features/notifications/setup'
+import AuthGate from './app/auth'
 
 type TabKey = 'home' | 'goals' | 'history' | 'settings'
 
-export default function App() {
+function Shell() {
   const [tab, setTab] = useState<TabKey>('home')
 
   // Set up notification listeners
@@ -36,27 +37,37 @@ export default function App() {
   }, [tab])
 
   return (
+    <View style={{ flex: 1 }}>
+      <StatusBar style="light" />
+      <AuthGate>
+        <>
+          {Screen}
+          <View style={styles.tabWrap}>
+            <BlurView intensity={30} tint="dark" style={styles.tabBar}>
+              {(
+                [
+                  { key: 'home', label: 'Home' },
+                  { key: 'goals', label: 'Goals' },
+                  { key: 'history', label: 'History' },
+                  { key: 'settings', label: 'Settings' },
+                ] as { key: TabKey; label: string }[]
+              ).map((t) => (
+                <TouchableOpacity key={t.key} onPress={() => setTab(t.key)} style={styles.tabBtn}>
+                  <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>{t.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </BlurView>
+          </View>
+        </>
+      </AuthGate>
+    </View>
+  )
+}
+
+export default function App() {
+  return (
     <AuthProvider>
-      <View style={{ flex: 1 }}>
-        <StatusBar style="light" />
-        {Screen}
-        <View style={styles.tabWrap}>
-          <BlurView intensity={30} tint="dark" style={styles.tabBar}>
-            {(
-              [
-                { key: 'home', label: 'Home' },
-                { key: 'goals', label: 'Goals' },
-                { key: 'history', label: 'History' },
-                { key: 'settings', label: 'Settings' },
-              ] as { key: TabKey; label: string }[]
-            ).map((t) => (
-              <TouchableOpacity key={t.key} onPress={() => setTab(t.key)} style={styles.tabBtn}>
-                <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>{t.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </BlurView>
-        </View>
-      </View>
+      <Shell />
     </AuthProvider>
   )
 }

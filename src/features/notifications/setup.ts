@@ -1,5 +1,7 @@
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
+import { supabase } from '../../lib/supabase'
+import { useAuth } from '../auth/AuthContext'
 
 // Set up notification handler globally
 Notifications.setNotificationHandler({
@@ -15,6 +17,25 @@ export function setupNotificationListeners() {
   // Listen for notifications while app is running
   const receivedSubscription = Notifications.addNotificationReceivedListener(notification => {
     console.log('Notification received!', notification.request.content.title)
+    const payload = notification.request.content
+    // Persist roast into Supabase if payload includes roast text
+    const user = supabase.auth.getUser()
+    user.then(({ data }) => {
+      const uid = data.user?.id
+      if (!uid) return
+      const roastText = String(payload.body ?? payload.title ?? '')
+      if (!roastText) return
+      supabase
+        .from('roast_history')
+        .insert({
+          user_id: uid,
+          roast_text: roastText,
+          intensity: (payload.data as any)?.intensity ?? 'medium',
+          delivered_at: new Date().toISOString(),
+          goal_context: (payload.data as any)?.goal ?? null,
+        })
+        .then(() => {})
+    })
   })
 
   // Listen for when user taps on notification

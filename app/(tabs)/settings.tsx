@@ -6,9 +6,7 @@ import { useAuth } from '../../src/features/auth/AuthContext'
 import { scheduleTestNotification } from '../../src/features/notifications/setup'
 
 export default function SettingsScreen() {
-  const { session, signInWithPassword, signUpWithPassword, signOut } = useAuth()
-  const [email, setEmail] = React.useState('')
-  const [password, setPassword] = React.useState('')
+  const { session, signOut } = useAuth()
   const [enabled, setEnabled] = React.useState(true)
   const [intensity, setIntensity] = React.useState<'mild' | 'medium' | 'spicy' | 'nuclear'>('medium')
 
@@ -48,36 +46,9 @@ export default function SettingsScreen() {
           )}
 
           <Text style={styles.title}>Account</Text>
-          {!session ? (
-            <BlurView intensity={25} tint="dark" style={[styles.card, { gap: 8 }] }>
-              <TextInput
-                placeholder="Email"
-                placeholderTextColor="#94a3b8"
-                value={email}
-                onChangeText={setEmail}
-                style={styles.input}
-                autoCapitalize="none"
-              />
-              <TextInput
-                placeholder="Password"
-                placeholderTextColor="#94a3b8"
-                value={password}
-                onChangeText={setPassword}
-                style={styles.input}
-                secureTextEntry
-              />
-              <View style={{ flexDirection:'row', gap: 8 }}>
-                <TouchableOpacity onPress={async () => { try { await signInWithPassword(email.trim(), password); } catch (e) { console.warn(e); } }} style={styles.btnPrimary}>
-                  <Text style={styles.btnText}>Sign In</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={async () => { try { await signUpWithPassword(email.trim(), password); } catch (e) { console.warn(e); } }} style={styles.btnSecondary}>
-                  <Text style={styles.btnText}>Sign Up</Text>
-                </TouchableOpacity>
-              </View>
-            </BlurView>
-          ) : (
+          {session && (
             <BlurView intensity={25} tint="dark" style={[styles.card, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }] }>
-              <Text style={styles.label}>{session.user.email}</Text>
+              <Text style={styles.label}>{(session.user.user_metadata as any)?.name ?? session.user.email}</Text>
               <TouchableOpacity onPress={signOut} style={styles.btnSecondary}>
                 <Text style={styles.btnText}>Sign Out</Text>
               </TouchableOpacity>

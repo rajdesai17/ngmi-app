@@ -8,7 +8,7 @@ type AuthContextType = {
   session: Session
   loading: boolean
   signInWithOtp: (email: string) => Promise<void>
-  signUpWithPassword: (email: string, password: string) => Promise<void>
+  signUpWithPassword: (name: string, email: string, password: string) => Promise<void>
   signInWithPassword: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
 }
@@ -49,8 +49,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error
   }
 
-  async function signUpWithPassword(email: string, password: string) {
-    const { error } = await supabase.auth.signUp({ email, password })
+  async function signUpWithPassword(name: string, email: string, password: string) {
+    const { error } = await supabase.auth.signUp({ email, password, options: { data: { name } } })
     if (error) throw error
   }
 
