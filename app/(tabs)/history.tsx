@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { LinearGradient } from 'expo-linear-gradient'
-import { BlurView } from 'expo-blur'
-import { SafeAreaView, ScrollView, StyleSheet, Text, View, ActivityIndicator } from 'react-native'
+import { ScrollView, StyleSheet, Text, View, ActivityIndicator } from 'react-native'
 import { supabase, type RoastRow } from '../../src/lib/supabase'
 import { useAuth } from '../../src/features/auth/AuthContext'
+import { ScreenContainer, Card, COLORS, ROAST_INTENSITY_COLORS } from '../../src/components/ui'
 
 export default function HistoryScreen() {
   const { session } = useAuth()
@@ -48,8 +47,6 @@ export default function HistoryScreen() {
     return () => { isMounted = false }
   }, [userId])
 
-  // removed mock roasts
-
   function getTimeAgo(delivered: string): string {
     const now = Date.now()
     const deliveredTime = new Date(delivered).getTime()
@@ -61,95 +58,165 @@ export default function HistoryScreen() {
     return 'Just now'
   }
 
-  function getIntensityColor(intensity: string): string {
+  function getIntensityEmoji(intensity: string): string {
     switch (intensity) {
-      case 'mild': return '#10b981'
-      case 'medium': return '#f59e0b'
-      case 'spicy': return '#ef4444'
-      case 'nuclear': return '#dc2626'
-      default: return '#6b7280'
+      case 'mild': return '😊'
+      case 'medium': return '🔥'
+      case 'spicy': return '🌶️'
+      case 'nuclear': return '☢️'
+      default: return '🤖'
     }
   }
 
   if (loading) {
     return (
-      <LinearGradient colors={["#0b0b10", "#12121a"]} style={{ flex: 1 }}>
-        <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#a3e635" />
-          <Text style={{ color: '#94a3b8', marginTop: 12 }}>Loading roast history...</Text>
-        </SafeAreaView>
-      </LinearGradient>
+      <ScreenContainer gradient="stats">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.text.accent} />
+          <Text style={{ color: COLORS.text.secondary, marginTop: 12 }}>
+            Loading roast history...
+          </Text>
+        </View>
+      </ScreenContainer>
     )
   }
 
   return (
-    <LinearGradient colors={["#0b0b10", "#12121a"]} style={{ flex: 1 }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ padding: 16 }}>
-          <Text style={styles.title}>Roast History</Text>
-          
-          {!session && (
-            <BlurView intensity={25} tint="dark" style={[styles.item, { marginBottom: 16 }]}>
-              <Text style={styles.emptyText}>Sign in to see your roast history</Text>
-            </BlurView>
-          )}
+    <ScreenContainer gradient="stats">
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <Text style={styles.title}>📜 Roast History</Text>
+        
+        {!session && (
+          <Card variant="primary" blur={true} style={{ marginBottom: 20 }}>
+            <Text style={styles.emptyTitle}>🔐 Sign In Required</Text>
+            <Text style={styles.emptyText}>
+              Sign in to see your complete roast history and track your motivation journey.
+            </Text>
+          </Card>
+        )}
 
-          <View style={{ gap: 10 }}>
-            {roasts.length === 0 && session ? (
-              <BlurView intensity={25} tint="dark" style={styles.item}>
-                <Text style={styles.emptyText}>No roasts yet. Set a goal to get roasted!</Text>
-              </BlurView>
-            ) : (
-              roasts.map((roast, idx) => (
-                <BlurView key={roast.id} intensity={25} tint="dark" style={styles.item}>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                      <Text style={styles.itemTitle}>Roast #{roasts.length - idx}</Text>
-                      <View 
-                        style={[
-                          styles.intensityBadge, 
-                          { backgroundColor: getIntensityColor(roast.intensity) }
-                        ]}
-                      >
-                        <Text style={styles.intensityText}>{roast.intensity}</Text>
-                      </View>
+        <View style={{ gap: 12 }}>
+          {roasts.length === 0 && session ? (
+            <Card variant="primary" blur={true}>
+              <Text style={styles.emptyTitle}>🌟 No Roasts Yet!</Text>
+              <Text style={styles.emptyText}>
+                Set a goal to start receiving savage motivation. Your roast history will appear here.
+              </Text>
+            </Card>
+          ) : (
+            roasts.map((roast, idx) => (
+              <Card key={roast.id} variant="secondary" blur={true}>
+                <View style={styles.roastHeader}>
+                  <View style={styles.roastInfo}>
+                    <Text style={styles.roastNumber}>
+                      🔥 Roast #{roasts.length - idx}
+                    </Text>
+                    <View 
+                      style={[
+                        styles.intensityBadge, 
+                        { backgroundColor: ROAST_INTENSITY_COLORS[roast.intensity as keyof typeof ROAST_INTENSITY_COLORS] || COLORS.text.muted }
+                      ]}
+                    >
+                      <Text style={styles.intensityText}>
+                        {getIntensityEmoji(roast.intensity)} {roast.intensity.toUpperCase()}
+                      </Text>
                     </View>
-                    <Text style={styles.itemBody}>{roast.roast_text}</Text>
-                    {roast.goal_context && (
-                      <Text style={styles.goalContext}>Re: {roast.goal_context}</Text>
-                    )}
                   </View>
-                  <Text style={styles.time}>{getTimeAgo(roast.delivered_at)}</Text>
-                </BlurView>
-              ))
-            )}
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </LinearGradient>
+                  <Text style={styles.timeAgo}>{getTimeAgo(roast.delivered_at)}</Text>
+                </View>
+                
+                <Text style={styles.roastText}>{roast.roast_text}</Text>
+                
+                {roast.goal_context && (
+                  <View style={styles.goalContextContainer}>
+                    <Text style={styles.goalContextLabel}>🎯 Goal:</Text>
+                    <Text style={styles.goalContextText}>{roast.goal_context}</Text>
+                  </View>
+                )}
+              </Card>
+            ))
+          )}
+        </View>
+      </ScrollView>
+    </ScreenContainer>
   )
 }
 
 const styles = StyleSheet.create({
-  title: { color: 'white', fontSize: 22, fontWeight: '700', marginBottom: 12 },
-  item: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#334155' },
-  itemTitle: { color: 'white', fontWeight: '600', marginRight: 8 },
-  itemBody: { color: '#94a3b8', marginTop: 2, fontSize: 14, lineHeight: 20 },
-  goalContext: { color: '#6b7280', marginTop: 4, fontSize: 12, fontStyle: 'italic' },
-  time: { color: '#a3e635', fontWeight: '700', marginLeft: 8, fontSize: 12 },
-  emptyText: { color: '#94a3b8', textAlign: 'center', fontSize: 14 },
+  title: { 
+    color: COLORS.text.primary, 
+    fontSize: 28, 
+    fontWeight: '700', 
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  emptyTitle: {
+    color: COLORS.text.primary,
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptyText: { 
+    color: COLORS.text.secondary, 
+    textAlign: 'center', 
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  roastHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  roastInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  roastNumber: { 
+    color: COLORS.text.primary, 
+    fontWeight: '600',
+    fontSize: 16,
+    marginRight: 8,
+  },
   intensityBadge: { 
-    paddingHorizontal: 6, 
-    paddingVertical: 2, 
-    borderRadius: 4, 
-    marginLeft: 8 
+    paddingHorizontal: 8, 
+    paddingVertical: 4, 
+    borderRadius: 12,
   },
   intensityText: { 
     color: 'white', 
     fontSize: 10, 
+    fontWeight: '700',
+  },
+  timeAgo: { 
+    color: COLORS.text.muted, 
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  roastText: { 
+    color: COLORS.text.secondary, 
+    fontSize: 16, 
+    lineHeight: 24,
+    marginBottom: 8,
+  },
+  goalContextContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  goalContextLabel: { 
+    color: COLORS.text.accent, 
+    fontSize: 12, 
     fontWeight: '600',
-    textTransform: 'uppercase'
+    marginBottom: 4,
+  },
+  goalContextText: { 
+    color: COLORS.text.muted, 
+    fontSize: 14,
+    fontStyle: 'italic',
+    lineHeight: 18,
   },
 })
-
-

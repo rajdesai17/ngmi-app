@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { BlurView } from 'expo-blur'
-import { LinearGradient } from 'expo-linear-gradient'
-import { SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View, TouchableOpacity } from 'react-native'
+import { ScrollView, StyleSheet, Text, TextInput, View, TouchableOpacity } from 'react-native'
 import { supabase, type GoalRow } from '../../src/lib/supabase'
 import { useAuth } from '../../src/features/auth/AuthContext'
+import { ScreenContainer, Card, COLORS } from '../../src/components/ui'
 
 export default function GoalsScreen() {
   const { session } = useAuth()
@@ -32,50 +31,60 @@ export default function GoalsScreen() {
   }, [userId])
 
   return (
-    <LinearGradient colors={["#0b0b10", "#101828"]} style={{ flex: 1 }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ padding: 16 }}>
-          <Text style={styles.title}>Set your goal</Text>
-          <BlurView intensity={30} tint="dark" style={styles.inputCard}>
-            <TextInput
-              placeholder="What’s your goal?"
-              placeholderTextColor="#94a3b8"
-              value={goal}
-              onChangeText={setGoal}
-              style={styles.input}
-            />
-            <TouchableOpacity
-              onPress={() => {
-                if (!goal.trim() || !userId) return
-                const g = goal.trim()
-                ;(async () => {
-                  const { data, error } = await supabase
-                    .from('goals')
-                    .insert({ user_id: userId, goal: g, status: 'active' })
-                    .select('*')
-                    .single()
-                  if (error) { console.warn(error); return }
-                  if (data) setRows((prev) => [data as GoalRow, ...prev])
-                  setGoal('')
-                })()
-              }}
-              style={styles.cta}
-            >
-              <Text style={{ color: '#0b0b10', fontWeight: '700' }}>Save</Text>
-            </TouchableOpacity>
-          </BlurView>
+    <ScreenContainer gradient="profile">
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <Text style={styles.title}>🎯 Set Your Goal</Text>
+        
+        <Card variant="primary" blur={true} style={{ marginBottom: 24 }}>
+          <TextInput
+            placeholder="What's your goal?"
+            placeholderTextColor={COLORS.text.muted}
+            value={goal}
+            onChangeText={setGoal}
+            style={styles.input}
+            multiline
+          />
+          <TouchableOpacity
+            onPress={() => {
+              if (!goal.trim() || !userId) return
+              const g = goal.trim()
+              ;(async () => {
+                const { data, error } = await supabase
+                  .from('goals')
+                  .insert({ user_id: userId, goal: g, status: 'active' })
+                  .select('*')
+                  .single()
+                if (error) { console.warn(error); return }
+                if (data) setRows((prev) => [data as GoalRow, ...prev])
+                setGoal('')
+              })()
+            }}
+            style={styles.saveButton}
+          >
+            <Text style={styles.saveButtonText}>Save Goal 🚀</Text>
+          </TouchableOpacity>
+        </Card>
 
-          <Text style={styles.subtitle}>Your goals</Text>
-          <View style={{ gap: 10 }}>
-            {rows.map((r) => {
-              const created = new Date(r.created_at)
-              const sinceHours = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60))
-              return (
-                <BlurView key={r.id} intensity={25} tint="dark" style={styles.goalCard}>
+        <Text style={styles.subtitle}>📋 Your Goals</Text>
+        
+        <View style={{ gap: 12 }}>
+          {rows.map((r) => {
+            const created = new Date(r.created_at)
+            const sinceHours = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60))
+            const sinceDays = Math.floor(sinceHours / 24)
+            const timeText = sinceDays > 0 ? `${sinceDays}d ago` : `${sinceHours}h ago`
+            
+            return (
+              <Card 
+                key={r.id} 
+                variant={r.status === 'completed' ? 'accent' : 'secondary'} 
+                blur={true}
+              >
+                <View style={styles.goalContent}>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ color: 'white', fontWeight: '600' }}>{r.goal}</Text>
-                    <Text style={{ color: '#94a3b8', marginTop: 4, fontSize: 12 }}>
-                      Status: {r.status} • {sinceHours}h since set
+                    <Text style={styles.goalText}>{r.goal}</Text>
+                    <Text style={styles.goalMeta}>
+                      {r.status === 'completed' ? '✅ Completed' : '🔥 Active'} • {timeText}
                     </Text>
                   </View>
                   {r.status === 'active' ? (
@@ -89,31 +98,115 @@ export default function GoalsScreen() {
                           .single()
                         if (data) setRows((prev) => prev.map((x) => (x.id === r.id ? (data as GoalRow) : x)))
                       }}
-                      style={[styles.cta, { backgroundColor: '#22c55e' }]}
+                      style={styles.completeButton}
                     >
-                      <Text style={{ color: '#0b0b10', fontWeight: '700' }}>Complete</Text>
+                      <Text style={styles.completeButtonText}>Complete ✅</Text>
                     </TouchableOpacity>
                   ) : (
-                    <Text style={{ color: '#a3e635', fontWeight: '700' }}>Done</Text>
+                    <View style={styles.completedBadge}>
+                      <Text style={styles.completedText}>🎉 Done!</Text>
+                    </View>
                   )}
-                </BlurView>
-              )
-            })}
-            {rows.length === 0 && <Text style={{ color: '#94a3b8' }}>No goals yet.</Text>}
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </LinearGradient>
+                </View>
+              </Card>
+            )
+          })}
+          
+          {rows.length === 0 && (
+            <Card variant="primary" blur={true}>
+              <Text style={styles.emptyText}>🌟 No goals yet!</Text>
+              <Text style={styles.emptySubtext}>
+                Set your first goal above to start your journey to success.
+              </Text>
+            </Card>
+          )}
+        </View>
+      </ScrollView>
+    </ScreenContainer>
   )
 }
 
 const styles = StyleSheet.create({
-  title: { color: 'white', fontSize: 22, fontWeight: '700', marginBottom: 12 },
-  subtitle: { color: 'white', fontSize: 16, fontWeight: '700', marginVertical: 12 },
-  inputCard: { borderRadius: 14, padding: 12, borderWidth: 1, borderColor: '#334155', gap: 10 },
-  input: { color: 'white', fontSize: 16 },
-  cta: { alignSelf: 'flex-start', backgroundColor: '#a3e635', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10 },
-  goalCard: { borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#334155' },
+  title: { 
+    color: COLORS.text.primary, 
+    fontSize: 28, 
+    fontWeight: '700', 
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  subtitle: { 
+    color: COLORS.text.primary, 
+    fontSize: 20, 
+    fontWeight: '700', 
+    marginVertical: 16,
+  },
+  input: { 
+    color: COLORS.text.primary, 
+    fontSize: 16,
+    minHeight: 60,
+    textAlignVertical: 'top',
+    marginBottom: 16,
+  },
+  saveButton: { 
+    alignSelf: 'flex-start', 
+    backgroundColor: COLORS.success, 
+    paddingVertical: 12, 
+    paddingHorizontal: 20, 
+    borderRadius: 12,
+  },
+  saveButtonText: {
+    color: 'white',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  goalContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  goalText: {
+    color: COLORS.text.primary,
+    fontWeight: '600',
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  goalMeta: {
+    color: COLORS.text.muted,
+    fontSize: 12,
+  },
+  completeButton: {
+    backgroundColor: COLORS.success,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  completeButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  completedBadge: {
+    backgroundColor: COLORS.success,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  completedText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  emptyText: {
+    color: COLORS.text.primary,
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    color: COLORS.text.secondary,
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
 })
-
-
